@@ -24,6 +24,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+       [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow steralla app to use your location.",
+          "motionPermission": "Allow steralla app to access your device motion"
+        }
+      ]
+    ]
   }
 }
