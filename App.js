@@ -41,7 +41,13 @@ export default function App() {
 
   const _subscribe = () => {
     const newSubscription = Magnetometer.addListener((result) => {
-      setData(result);
+
+    let angulo = Math.atan2(result.x, result.y);
+    result.x = angulo.x * 180 / Math.PI
+    result.y = angulo.y * 180 / Math.PI
+
+    return setData(result)
+
     });
 
     setSubscription(newSubscription);
@@ -55,12 +61,14 @@ export default function App() {
   };
 
   const _slow = () => {
-    Magnetometer.setUpdateInterval(5000);
+    Magnetometer.setUpdateInterval(50);
   };
 
   const _fast = () => {
     Magnetometer.setUpdateInterval(100);
   };
+
+  
 
   // =========================
   // UBICACIÓN
