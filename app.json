@@ -26,11 +26,23 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-       [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir a Steralla usar la cámara.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow steralla app to use your location.",
-          "motionPermission": "Allow steralla app to access your device motion"
+          "locationWhenInUsePermission": "Permitir a Steralla usar tu ubicación mientras utilizas la aplicación."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Permitir a Steralla acceder al movimiento del dispositivo."
         }
       ]
     ]
