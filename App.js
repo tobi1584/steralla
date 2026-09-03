@@ -1,272 +1,139 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import * as Location from 'expo-location';
-import { Magnetometer, DeviceMotion } from 'expo-sensors';
+import BottomControls from './src/components/BottomControls';
+import CameraPreview from './src/components/CameraPreview';
+import SkyOverlay from './src/components/SkyOverlay';
+import StatusPanel from './src/components/StatusPanel';
+import useAppState from './src/hooks/useAppState';
+import useCameraAccess from './src/hooks/useCameraAccess';
+import useCelestialBodies from './src/hooks/useCelestialBodies';
+import useDeviceTracking from './src/hooks/useDeviceTracking';
+import useProjectionProfiles from './src/hooks/useProjectionProfiles';
+import styles from './src/styles';
 
 export default function App() {
-  // =========================
-  // UBICACIÓN
-  // =========================
-
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  // =========================
-  // MAGNETÓMETRO
-  // =========================
-
-  const [{ x, y, z }, setData] = useState({
-    x: 0,
-    y: 0,
-    z: 0,
+  const { width, height } = useWindowDimensions();
+  const appState = useAppState();
+  const camera = useCameraAccess();
+  const tracking = useDeviceTracking({
+    appState,
+    enabled: camera.requestSettled,
+    retryKey: camera.retryKey,
+    width,
+    height,
   });
-
-  const [subscription, setSubscription] = useState(null);
-
-  // =========================
-  // MOVIMIENTO
-  // =========================
-
-  const [{ alpha, beta, gamma }, setDMotion] = useState({
-    alpha: 0,
-    beta: 0,
-    gamma: 0,
-  });
-
-  // =========================
-  // FUNCIONES MAGNETÓMETRO
-  // =========================
-
-  const _subscribe = () => {
-    const newSubscription = Magnetometer.addListener((result) => {
-
-    let angulo = Math.atan2(result.x, result.y);
-    result.x = angulo.x * 180 / Math.PI
-    result.y = angulo.y * 180 / Math.PI
-
-    return setData(result)
-
-    });
-
-    setSubscription(newSubscription);
-  };
-
-  const _unsubscribe = () => {
-    if (subscription) {
-      subscription.remove();
-      setSubscription(null);
-    }
-  };
-
-  const _slow = () => {
-    Magnetometer.setUpdateInterval(50);
-  };
-
-  const _fast = () => {
-    Magnetometer.setUpdateInterval(100);
-  };
-
-  
-
-  // =========================
-  // UBICACIÓN
-  // =========================
-
-  useEffect(() => {
-    async function getCurrentLocation() {
-      const { status } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        setErrorMsg(
-          'Permission to access location was denied'
-        );
-        return;
-      }
-
-      const currentLocation =
-        await Location.getCurrentPositionAsync({});
-
-      setLocation(currentLocation);
-    }
-
-    getCurrentLocation();
-  }, []);
-
-  // =========================
-  // MAGNETÓMETRO
-  // =========================
-
-  useEffect(() => {
-    Magnetometer.setUpdateInterval(500);
-
-    const newSubscription = Magnetometer.addListener((result) => {
-      setData(result);
-    });
-
-    setSubscription(newSubscription);
-
-    return () => {
-      newSubscription.remove();
-    };
-  }, []);
-
-  // =========================
-  // DEVICE MOTION
-  // =========================
-
-  useEffect(() => {
-    DeviceMotion.setUpdateInterval(500);
-
-    const motionSubscription = DeviceMotion.addListener((data) => {
-      if (data.rotation) {
-        setDMotion({
-          alpha: data.rotation.alpha ?? 0,
-          beta: data.rotation.beta ?? 0,
-          gamma: data.rotation.gamma ?? 0,
-        });
-      }
-    });
-
-    return () => {
-      motionSubscription.remove();
-    };
-  }, []);
-
-  // =========================
-  // TEXTO UBICACIÓN
-  // =========================
-
-  let text = 'Waiting...';
-
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = `Latitud: ${location.coords.latitude}
-Longitud: ${location.coords.longitude}`;
-  }
-
-  // =========================
-  // PANTALLA
-  // =========================
+  const celestial = useCelestialBodies(appState, tracking.location);
+  const projection = useProjectionProfiles(tracking.orientation);
+  const cameraGranted = camera.permission?.granted;
+  const sun = celestial.bodies.find((body) => body.id === 'Sun');
+  const showRetry =
+    !camera.permission ||
+    hasBlockingServiceError(
+      camera.permission,
+      camera.status,
+      tracking.locationStatus,
+      tracking.sensorStatus
+    );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.paragraph}>
-        {text}
-      </Text>
+      {cameraGranted && appState === 'active' ? (
+        <CameraPreview
+          retryKey={camera.retryKey}
+          onReady={camera.handleReady}
+          onError={camera.handleError}
+        />
+      ) : (
+        <CameraPlaceholder
+          appState={appState}
+          permission={camera.permission}
+        />
+      )}
 
-      {/* MAGNETÓMETRO */}
-      <View style={styles.section}>
-        <Text style={styles.title}>
-          Magnetómetro
-        </Text>
-        <Text style={styles.text}>
-          X: {x.toFixed(2)}
-        </Text>
-        <Text style={styles.text}>
-          Y: {y.toFixed(2)}
-        </Text>
-        <Text style={styles.text}>
-          Z: {z.toFixed(2)}
-        </Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            onPress={subscription ? _unsubscribe : _subscribe}
-            style={styles.button}
-          >
-            <Text>
-              {subscription ? 'Desactivar' : 'Activar'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={_slow}
-            style={[styles.button, styles.middleButton]}
-          >
-            <Text>Slow</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={_fast}
-            style={styles.button}
-          >
-            <Text>Fast</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <SkyOverlay
+        appState={appState}
+        width={width}
+        height={height}
+        gravityRef={tracking.gravityRef}
+        magneticRef={tracking.magneticRef}
+        headingRef={tracking.headingRef}
+        frameRef={tracking.frameRef}
+        orientationRef={tracking.orientationRef}
+        bodiesRef={celestial.bodiesRef}
+        profilesRef={projection.profilesRef}
+        onOrientationReady={tracking.setOrientationReady}
+      />
 
-      {/* DEVICE MOTION */}
-      <View style={styles.section}>
-        <Text style={styles.title}>
-          Movimiento
-        </Text>
-        <Text>
-          Alpha: {alpha.toFixed(2)}
-        </Text>
-        <Text>
-          Beta: {beta.toFixed(2)}
-        </Text>
-        <Text>
-          Gamma: {gamma.toFixed(2)}
-        </Text>
-      </View>
+      <StatusPanel
+        location={tracking.location}
+        locationStatus={tracking.locationStatus}
+        locationUpdated={tracking.locationUpdated}
+        heading={tracking.heading}
+        orientation={tracking.orientation}
+        orientationReady={tracking.orientationReady}
+        sensorStatus={tracking.sensorStatus}
+        ephemerisUpdated={celestial.updatedAt}
+        ephemerisError={celestial.error}
+        cameraStatus={camera.status}
+        cameraGranted={cameraGranted}
+        calibrationHint={tracking.calibrationHint}
+        calibrationMessage={tracking.calibrationMessage}
+        sun={sun}
+        showRetry={showRetry}
+        onRetry={camera.retry}
+      />
+
+      <BottomControls
+        profileName={projection.profileName}
+        profile={projection.profile}
+        celestialBodies={celestial.bodies}
+        onChangeProfile={projection.changeProfile}
+        onRecalibrate={tracking.recalibrate}
+      />
+
+      <StatusBar style="light" />
     </View>
   );
 }
 
+function CameraPlaceholder({ appState, permission }) {
+  const message =
+    appState !== 'active'
+      ? 'Cámara en pausa'
+      : getCameraPermissionMessage(permission);
 
-// =========================
-// ESTILOS
-// =========================
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.cameraPlaceholder]}>
+      <Text style={styles.cameraPlaceholderText}>{message}</Text>
+    </View>
+  );
+}
 
-const styles = StyleSheet.create({
+function getCameraPermissionMessage(permission) {
+  if (!permission) return 'Comprobando permiso de cámara…';
+  if (!permission.granted) {
+    return 'Se necesita permiso para usar la cámara trasera.';
+  }
+  return 'Iniciando cámara…';
+}
 
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
+function hasBlockingServiceError(
+  cameraPermission,
+  cameraStatus,
+  locationStatus,
+  sensorStatus
+) {
+  const sensorErrors = ['no disponible', 'denegado', 'error'];
+  const hasSensorError = Object.values(sensorStatus).some((status) =>
+    sensorErrors.some((error) => status.includes(error))
+  );
 
-  paragraph: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-
-  section: {
-    marginVertical: 15,
-  },
-
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-
-  text: {
-    textAlign: 'center',
-    fontSize: 16,
-  },
-
-  buttonContainer: {
-    flexDirection: 'row',
-    marginTop: 15,
-  },
-
-  button: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#eee',
-    padding: 10,
-  },
-
-  middleButton: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#ccc',
-  },
-
-});
+  return (
+    cameraPermission?.granted === false ||
+    cameraStatus.state === 'error' ||
+    locationStatus.includes('denegado') ||
+    locationStatus.startsWith('Error') ||
+    hasSensorError
+  );
+}
