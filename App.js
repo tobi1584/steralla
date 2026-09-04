@@ -17,7 +17,6 @@ export default function App() {
   const appState = useAppState();
   const camera = useCameraAccess();
   const tracking = useDeviceTracking({
-    appState,
     enabled: camera.requestSettled,
     retryKey: camera.retryKey,
     width,
@@ -38,7 +37,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {cameraGranted && appState === 'active' ? (
+      {cameraGranted ? (
         <CameraPreview
           retryKey={camera.retryKey}
           onReady={camera.handleReady}
@@ -99,7 +98,7 @@ export default function App() {
 
 function CameraPlaceholder({ appState, permission }) {
   const message =
-    appState !== 'active'
+    appState === 'background'
       ? 'Cámara en pausa'
       : getCameraPermissionMessage(permission);
 

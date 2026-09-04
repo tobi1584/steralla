@@ -29,7 +29,6 @@ const INITIAL_SENSOR_STATUS = {
 };
 
 export default function useDeviceTracking({
-  appState,
   enabled,
   retryKey,
   width,
@@ -88,7 +87,7 @@ export default function useDeviceTracking({
   );
 
   useEffect(() => {
-    if (appState !== 'active' || !enabled) return undefined;
+    if (!enabled) return undefined;
 
     let disposed = false;
     let motionActive = false;
@@ -270,9 +269,18 @@ export default function useDeviceTracking({
     };
 
     const startServices = async () => {
-      // Secuencial para no solapar los diálogos nativos de permisos.
-      await startLocation();
-      if (!disposed) await startSensors();
+      if (Platform.OS === 'ios') {
+        // En iOS, DeviceMotion puede mostrar su propio diálogo. Los permisos se
+        // solicitan en secuencia para evitar que dos diálogos nativos coincidan.
+        await startLocation();
+        if (!disposed) await startSensors();
+        return;
+      }
+
+      // En Android los sensores no requieren un diálogo propio. No deben quedar
+      // bloqueados por getCurrentPositionAsync, que puede tardar mucho si el GPS
+      // todavía no tiene una posición válida en una compilación independiente.
+      await Promise.all([startLocation(), startSensors()]);
     };
 
     void startServices();
@@ -281,7 +289,7 @@ export default function useDeviceTracking({
       disposed = true;
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [appState, enabled, retryKey]);
+  }, [enabled, retryKey]);
 
   const recalibrate = useCallback(() => {
     if (calibratingRef.current) return;
