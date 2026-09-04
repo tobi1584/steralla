@@ -165,7 +165,12 @@ function BodyMarker({ body }) {
     <View
       style={[
         styles.bodyMarker,
-        { left: body.x - 38, top: body.y - 16 },
+        {
+          transform: [
+            { translateX: body.x - 38 },
+            { translateY: body.y - 16 },
+          ],
+        },
       ]}
     >
       <View style={[styles.bodyDot, { backgroundColor: body.color }]} />

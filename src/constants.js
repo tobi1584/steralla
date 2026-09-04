@@ -1,6 +1,6 @@
 export const DEG = Math.PI / 180;
-export const SENSOR_INTERVAL = 20;
 export const OVERLAY_FRAME_INTERVAL = 1000 / 30;
+export const SENSOR_INTERVAL = OVERLAY_FRAME_INTERVAL;
 export const EPHEMERIS_INTERVAL = 15000;
 export const GRAVITY_SMOOTHING = 0.2;
 export const MAGNETIC_SMOOTHING = 0.18;

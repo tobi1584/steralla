@@ -52,15 +52,28 @@ export function getScreenOrientation(
   height,
   previous
 ) {
-  if (sensorOrientation === 90) return 'landscapeRight';
-  if (sensorOrientation === -90 || sensorOrientation === 270) {
-    return 'landscapeLeft';
-  }
-  if (sensorOrientation === 180) return 'portraitUpsideDown';
-  if (sensorOrientation === 0) return 'portrait';
-  if (previous) return previous;
+  const viewportIsLandscape = width > height;
+  const previousMatchesViewport =
+    previous &&
+    previous.startsWith('landscape') === viewportIsLandscape;
 
-  return width > height ? 'landscapeLeft' : 'portrait';
+  // La orientacion del sensor no siempre equivale a la de la interfaz. En
+  // particular, iOS devuelve 0 cuando el dispositivo esta boca arriba, y
+  // durante un giro el sensor puede adelantarse al cambio de dimensiones.
+  // Las dimensiones mandan; el sensor solo distingue el sentido del giro.
+  if (viewportIsLandscape) {
+    if (sensorOrientation === 90) return 'landscapeRight';
+    if (sensorOrientation === -90 || sensorOrientation === 270) {
+      return 'landscapeLeft';
+    }
+
+    return previousMatchesViewport ? previous : 'landscapeLeft';
+  }
+
+  if (sensorOrientation === 0) return 'portrait';
+  if (sensorOrientation === 180) return 'portraitUpsideDown';
+
+  return previousMatchesViewport ? previous : 'portrait';
 }
 
 export function getCameraAxes(orientation) {

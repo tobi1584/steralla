@@ -136,6 +136,8 @@ const styles = StyleSheet.create({
 
   bodyMarker: {
     position: 'absolute',
+    left: 0,
+    top: 0,
     width: 76,
     alignItems: 'center',
   },

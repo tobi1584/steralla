@@ -52,6 +52,7 @@ export default function useDeviceTracking({
   const magneticRef = useRef(null);
   const frameRef = useRef(null);
   const orientationRef = useRef(initialOrientation);
+  const sensorOrientationRef = useRef(null);
   const dimensionsRef = useRef({ width, height });
   const headingRef = useRef({ correction: 0, mode: 'magnético' });
   const calibrationSamplesRef = useRef([]);
@@ -63,9 +64,14 @@ export default function useDeviceTracking({
   useEffect(() => {
     dimensionsRef.current = { width, height };
 
-    const isLandscape = width > height;
-    if (isLandscape !== orientationRef.current.startsWith('landscape')) {
-      const nextOrientation = isLandscape ? 'landscapeLeft' : 'portrait';
+    const nextOrientation = getScreenOrientation(
+      sensorOrientationRef.current,
+      width,
+      height,
+      orientationRef.current
+    );
+
+    if (nextOrientation !== orientationRef.current) {
       orientationRef.current = nextOrientation;
       setOrientation(nextOrientation);
     }
@@ -85,6 +91,8 @@ export default function useDeviceTracking({
     if (appState !== 'active' || !enabled) return undefined;
 
     let disposed = false;
+    let motionActive = false;
+    let magnetometerActive = false;
     const subscriptions = [];
 
     setLocationStatus('Solicitando permiso…');
@@ -179,8 +187,9 @@ export default function useDeviceTracking({
           );
         }
 
+        sensorOrientationRef.current = measurement.orientation;
         const nextOrientation = getScreenOrientation(
-          measurement.orientation,
+          sensorOrientationRef.current,
           dimensionsRef.current.width,
           dimensionsRef.current.height,
           orientationRef.current
@@ -191,7 +200,10 @@ export default function useDeviceTracking({
           setOrientation(nextOrientation);
         }
 
-        updateSensorStatus(setSensorStatus, 'motion', 'activo');
+        if (!motionActive) {
+          motionActive = true;
+          updateSensorStatus(setSensorStatus, 'motion', 'activo');
+        }
       });
       registerSubscription(subscription);
     };
@@ -227,7 +239,10 @@ export default function useDeviceTracking({
           corrected,
           MAGNETIC_SMOOTHING
         );
-        updateSensorStatus(setSensorStatus, 'magnetometer', 'activo');
+        if (!magnetometerActive) {
+          magnetometerActive = true;
+          updateSensorStatus(setSensorStatus, 'magnetometer', 'activo');
+        }
       });
       registerSubscription(subscription);
     };
