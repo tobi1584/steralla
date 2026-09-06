@@ -213,6 +213,99 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
 
+  constellationLine: {
+    position: 'absolute',
+    height: 1,
+    backgroundColor: 'rgba(219, 234, 254, 0.34)',
+  },
+
+  constellationLineSelected: {
+    height: 1.5,
+    backgroundColor: 'rgba(224, 242, 254, 0.62)',
+    shadowColor: '#bae6fd',
+    shadowOpacity: 0.45,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+  },
+
+  constellationStar: {
+    position: 'absolute',
+    backgroundColor: 'rgba(241, 245, 249, 0.72)',
+    shadowColor: '#fff',
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+
+  constellationStarSelected: {
+    backgroundColor: '#fff',
+    shadowOpacity: 0.95,
+    shadowRadius: 7,
+    elevation: 5,
+  },
+
+  constellationLabel: {
+    position: 'absolute',
+    width: 120,
+    alignItems: 'center',
+  },
+
+  constellationName: {
+    color: 'rgba(226, 232, 240, 0.58)',
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowRadius: 3,
+  },
+
+  constellationNameSelected: {
+    color: 'rgba(255, 255, 255, 0.82)',
+    fontWeight: '700',
+  },
+
+  deepSkyMarker: {
+    position: 'absolute',
+    width: 68,
+    alignItems: 'center',
+  },
+
+  deepSkyGlow: {
+    width: 25,
+    height: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(221, 214, 254, 0.48)',
+    backgroundColor: 'rgba(167, 139, 250, 0.12)',
+    transform: [{ rotate: '-25deg' }],
+    shadowColor: '#c4b5fd',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+
+  deepSkyGlowSelected: {
+    borderColor: 'rgba(237, 233, 254, 0.9)',
+    backgroundColor: 'rgba(196, 181, 253, 0.28)',
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+  },
+
+  deepSkyName: {
+    color: 'rgba(221, 214, 254, 0.62)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.85)',
+    textShadowRadius: 3,
+  },
+
+  deepSkyNameSelected: {
+    color: '#ede9fe',
+    fontWeight: '700',
+  },
+
   crosshairHorizontal: {
     position: 'absolute',
     width: 26,
@@ -379,6 +472,18 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(96, 165, 250, 0.8)',
   },
 
+  menuSectionHeaderSecondary: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingHorizontal: 14,
+    borderRadius: 15,
+    backgroundColor: 'rgba(30, 41, 59, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.4)',
+  },
+
   menuSectionTitle: {
     flex: 1,
     color: '#fff',
@@ -448,6 +553,21 @@ const styles = StyleSheet.create({
   bodyList: {
     gap: 6,
     marginTop: 8,
+  },
+
+  targetGroup: {
+    gap: 6,
+    marginBottom: 8,
+  },
+
+  targetGroupLabel: {
+    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginTop: 4,
+    marginBottom: 2,
+    textTransform: 'uppercase',
   },
 
   bodyGroup: {

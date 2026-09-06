@@ -14,6 +14,7 @@ const CLOSED_DRAWER_OFFSET = -360;
 
 export default function CelestialMenu({
   bodies,
+  skyTargets,
   selectedBodyId,
   onSelectBody,
   profileName,
@@ -24,8 +25,19 @@ export default function CelestialMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [planetsOpen, setPlanetsOpen] = useState(false);
+  const [constellationsOpen, setConstellationsOpen] = useState(false);
+  const [deepSkyOpen, setDeepSkyOpen] = useState(false);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
   const drawerProgress = useRef(new Animated.Value(0)).current;
+  const featuredTargets = skyTargets.filter(
+    (target) => target.group === 'featured'
+  );
+  const zodiacTargets = skyTargets.filter(
+    (target) => target.group === 'zodiac'
+  );
+  const deepSkyTargets = skyTargets.filter(
+    (target) => target.kind === 'deepSky'
+  );
 
   useEffect(() => {
     Animated.timing(drawerProgress, {
@@ -108,6 +120,60 @@ export default function CelestialMenu({
 
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ expanded: constellationsOpen }}
+            onPress={() => setConstellationsOpen((current) => !current)}
+            style={styles.menuSectionHeaderSecondary}
+          >
+            <Text style={styles.menuSectionTitle}>Constelaciones</Text>
+            <Text style={styles.menuSectionChevron}>
+              {constellationsOpen ? '⌃' : '⌄'}
+            </Text>
+          </Pressable>
+
+          {constellationsOpen && (
+            <View style={styles.bodyList}>
+              <TargetGroup
+                label="Destacadas"
+                targets={featuredTargets}
+                selectedBodyId={selectedBodyId}
+                onSelect={selectBody}
+              />
+              <TargetGroup
+                label="Zodiaco"
+                targets={zodiacTargets}
+                selectedBodyId={selectedBodyId}
+                onSelect={selectBody}
+              />
+            </View>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: deepSkyOpen }}
+            onPress={() => setDeepSkyOpen((current) => !current)}
+            style={styles.menuSectionHeaderSecondary}
+          >
+            <Text style={styles.menuSectionTitle}>Galaxias</Text>
+            <Text style={styles.menuSectionChevron}>
+              {deepSkyOpen ? '⌃' : '⌄'}
+            </Text>
+          </Pressable>
+
+          {deepSkyOpen && (
+            <View style={styles.bodyList}>
+              {deepSkyTargets.map((target) => (
+                <BodyChoice
+                  body={target}
+                  key={target.id}
+                  selected={target.id === selectedBodyId}
+                  onPress={() => selectBody(target.id)}
+                />
+              ))}
+            </View>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
             accessibilityState={{ expanded: calibrationOpen }}
             onPress={() => setCalibrationOpen((current) => !current)}
             style={styles.calibrationDisclosure}
@@ -151,6 +217,22 @@ export default function CelestialMenu({
       >
         <Text style={styles.menuButtonIcon}>{open ? '×' : '☰'}</Text>
       </Pressable>
+    </View>
+  );
+}
+
+function TargetGroup({ label, targets, selectedBodyId, onSelect }) {
+  return (
+    <View style={styles.targetGroup}>
+      <Text style={styles.targetGroupLabel}>{label}</Text>
+      {targets.map((target) => (
+        <BodyChoice
+          body={target}
+          key={target.id}
+          selected={target.id === selectedBodyId}
+          onPress={() => onSelect(target.id)}
+        />
+      ))}
     </View>
   );
 }

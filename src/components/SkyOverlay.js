@@ -7,7 +7,9 @@ import { buildOrientationFrame } from '../utils/orientation';
 import {
   projectBody,
   projectBodyGuidance,
+  projectConstellation,
   projectHorizon,
+  isProjectedPointVisible,
 } from '../utils/projection';
 
 function SkyOverlay({
@@ -20,12 +22,16 @@ function SkyOverlay({
   frameRef,
   orientationRef,
   bodiesRef,
+  constellationsRef,
+  deepSkyObjectsRef,
   profilesRef,
   selectedBodyId,
   onOrientationReady,
 }) {
   const [overlay, setOverlay] = useState({
     bodies: [],
+    constellations: [],
+    deepSkyObjects: [],
     horizon: null,
     guidance: null,
     selectedVisible: null,
@@ -40,6 +46,8 @@ function SkyOverlay({
     if (appState !== 'active') {
       setOverlay({
         bodies: [],
+        constellations: [],
+        deepSkyObjects: [],
         horizon: null,
         guidance: null,
         selectedVisible: null,
@@ -82,6 +90,8 @@ function SkyOverlay({
           hadProjection = false;
           setOverlay({
             bodies: [],
+            constellations: [],
+            deepSkyObjects: [],
             horizon: null,
             guidance: null,
             selectedVisible: null,
@@ -102,23 +112,52 @@ function SkyOverlay({
           projectBody(body, frame, orientation, profile, width, height)
         )
         .filter(Boolean);
+      const constellations = constellationsRef.current
+        .map((constellation) =>
+          projectConstellation(
+            constellation,
+            frame,
+            orientation,
+            profile,
+            width,
+            height
+          )
+        )
+        .filter((constellation) => constellation.visible);
+      const deepSkyObjects = deepSkyObjectsRef.current
+        .map((object) =>
+          projectBody(object, frame, orientation, profile, width, height)
+        )
+        .filter(Boolean);
       const activeBodyId = selectedBodyIdRef.current;
-      const selectedBody = activeBodyId
-        ? bodiesRef.current.find((body) => body.id === activeBodyId)
+      const selectedBody = findSkyTarget(
+        activeBodyId,
+        bodiesRef.current,
+        constellationsRef.current,
+        deepSkyObjectsRef.current
+      );
+      const selectedProjection = selectedBody
+        ? projectBody(
+            selectedBody,
+            frame,
+            orientation,
+            profile,
+            width,
+            height
+          )
         : null;
-      const selectedVisible = selectedBody
-        ? bodies.find(
-            (body) =>
-              body.id === selectedBody.id &&
-              body.x >= 0 &&
-              body.x <= width &&
-              body.y >= 0 &&
-              body.y <= height
-          ) || null
+      const selectedVisible = isProjectedPointVisible(
+        selectedProjection,
+        width,
+        height
+      )
+        ? selectedBody
         : null;
 
       setOverlay({
         bodies,
+        constellations,
+        deepSkyObjects,
         selectedVisible,
         guidance:
           selectedBody && !selectedVisible
@@ -149,6 +188,8 @@ function SkyOverlay({
   }, [
     appState,
     bodiesRef,
+    constellationsRef,
+    deepSkyObjectsRef,
     frameRef,
     gravityRef,
     headingRef,
@@ -166,6 +207,22 @@ function SkyOverlay({
       style={[StyleSheet.absoluteFill, styles.skyOverlay]}
     >
       <Horizon horizon={overlay.horizon} />
+
+      {overlay.constellations.map((constellation) => (
+        <Constellation
+          constellation={constellation}
+          key={constellation.id}
+          selectedBodyId={selectedBodyId}
+        />
+      ))}
+
+      {overlay.deepSkyObjects.map((object) => (
+        <DeepSkyMarker
+          key={object.id}
+          object={object}
+          selected={object.id === selectedBodyId}
+        />
+      ))}
 
       {overlay.bodies.map((body) => (
         <BodyMarker
@@ -253,6 +310,98 @@ function BodyMarker({ body, selected }) {
   );
 }
 
+function Constellation({ constellation, selectedBodyId }) {
+  const selected = constellation.id === selectedBodyId;
+  const polarisSelected = selectedBodyId === 'Polaris';
+
+  return (
+    <>
+      {constellation.segments.map((segment) => (
+        <View
+          key={segment.id}
+          style={[
+            styles.constellationLine,
+            selected && styles.constellationLineSelected,
+            segment.lineStyle,
+          ]}
+        />
+      ))}
+
+      {constellation.stars.map((star) => {
+        const size = Math.max(3, Math.min(6, 7 - star.magnitude * 0.7));
+        const starSelected = polarisSelected && star.id === 'polaris';
+
+        return (
+          <View
+            key={`${constellation.id}-${star.id}`}
+            style={[
+              styles.constellationStar,
+              (selected || starSelected) && styles.constellationStarSelected,
+              {
+                left: star.x - size / 2,
+                top: star.y - size / 2,
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+              },
+            ]}
+          />
+        );
+      })}
+
+      {constellation.centerVisible && (
+        <View
+          style={[
+            styles.constellationLabel,
+            {
+              left: constellation.center.x - 60,
+              top: constellation.center.y - 8,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.constellationName,
+              selected && styles.constellationNameSelected,
+            ]}
+          >
+            {constellation.name}
+          </Text>
+        </View>
+      )}
+    </>
+  );
+}
+
+function DeepSkyMarker({ object, selected }) {
+  return (
+    <View
+      style={[
+        styles.deepSkyMarker,
+        {
+          left: object.x - 34,
+          top: object.y - 18,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.deepSkyGlow,
+          selected && styles.deepSkyGlowSelected,
+        ]}
+      />
+      <Text
+        style={[
+          styles.deepSkyName,
+          selected && styles.deepSkyNameSelected,
+        ]}
+      >
+        Andrómeda
+      </Text>
+    </View>
+  );
+}
+
 function TargetGuide({ guidance }) {
   return (
     <View
@@ -275,6 +424,40 @@ function TargetGuide({ guidance }) {
       <Text style={styles.targetGuideName}>{guidance.name}</Text>
     </View>
   );
+}
+
+function findSkyTarget(targetId, bodies, constellations, deepSkyObjects) {
+  if (!targetId) return null;
+
+  const body = bodies.find((candidate) => candidate.id === targetId);
+  if (body) return body;
+
+  const constellation = constellations.find(
+    (candidate) => candidate.id === targetId
+  );
+  if (constellation) return constellation;
+
+  const deepSkyObject = deepSkyObjects.find(
+    (candidate) => candidate.id === targetId
+  );
+  if (deepSkyObject) return deepSkyObject;
+
+  if (targetId === 'Polaris') {
+    const polaris = constellations
+      .find((candidate) => candidate.id === 'UrsaMinor')
+      ?.stars.find((star) => star.id === 'polaris');
+
+    return polaris
+      ? {
+          ...polaris,
+          id: 'Polaris',
+          name: 'Estrella Polar',
+          color: '#f8fafc',
+        }
+      : null;
+  }
+
+  return null;
 }
 
 export default memo(SkyOverlay);

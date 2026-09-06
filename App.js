@@ -61,6 +61,8 @@ export default function App() {
         frameRef={tracking.frameRef}
         orientationRef={tracking.orientationRef}
         bodiesRef={celestial.bodiesRef}
+        constellationsRef={celestial.constellationsRef}
+        deepSkyObjectsRef={celestial.deepSkyObjectsRef}
         profilesRef={projection.profilesRef}
         selectedBodyId={selectedBodyId}
         onOrientationReady={tracking.setOrientationReady}
@@ -80,6 +82,7 @@ export default function App() {
 
       <CelestialMenu
         bodies={celestial.bodies}
+        skyTargets={celestial.skyTargets}
         selectedBodyId={selectedBodyId}
         onSelectBody={setSelectedBodyId}
         profileName={projection.profileName}

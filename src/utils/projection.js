@@ -15,6 +15,30 @@ function horizontalToWorld(azimuth, altitude) {
 }
 
 export function projectBody(body, frame, orientation, profile, width, height) {
+  const projected = projectSkyPoint(
+    body,
+    frame,
+    orientation,
+    profile,
+    width,
+    height
+  );
+  const margin = 48;
+
+  if (
+    !projected ||
+    projected.x < -margin ||
+    projected.x > width + margin ||
+    projected.y < -margin ||
+    projected.y > height + margin
+  ) {
+    return null;
+  }
+
+  return projected;
+}
+
+function projectSkyPoint(body, frame, orientation, profile, width, height) {
   if (
     !frame ||
     !Number.isFinite(body.azimuth) ||
@@ -55,20 +79,125 @@ export function projectBody(body, frame, orientation, profile, width, height) {
   const y =
     height / 2 -
     (Math.tan(verticalAngle) / verticalScale) * (height / 2);
-  const margin = 48;
-
   if (
     !Number.isFinite(x) ||
-    !Number.isFinite(y) ||
-    x < -margin ||
-    x > width + margin ||
-    y < -margin ||
-    y > height + margin
+    !Number.isFinite(y)
   ) {
     return null;
   }
 
   return { ...body, x, y };
+}
+
+export function projectConstellation(
+  constellation,
+  frame,
+  orientation,
+  profile,
+  width,
+  height
+) {
+  const projectedStars = new Map();
+
+  constellation.stars.forEach((star) => {
+    const projected = projectSkyPoint(
+      star,
+      frame,
+      orientation,
+      profile,
+      width,
+      height
+    );
+    if (projected) projectedStars.set(star.id, projected);
+  });
+
+  const stars = [...projectedStars.values()].filter((star) =>
+    isPointInViewport(star, width, height, 10)
+  );
+  const segments = constellation.segments
+    .map(([startId, endId], index) => {
+      const start = projectedStars.get(startId);
+      const end = projectedStars.get(endId);
+      if (!start || !end) return null;
+
+      const clipped = clipSegmentToViewport(start, end, width, height);
+      if (!clipped) return null;
+
+      return {
+        id: `${constellation.id}-${index}`,
+        lineStyle: createLineStyle(clipped[0], clipped[1]),
+      };
+    })
+    .filter(Boolean);
+  const center = projectSkyPoint(
+    constellation,
+    frame,
+    orientation,
+    profile,
+    width,
+    height
+  );
+  const centerVisible = Boolean(
+    center && isPointInViewport(center, width, height)
+  );
+
+  return {
+    ...constellation,
+    stars,
+    segments,
+    center,
+    centerVisible,
+    visible: stars.length > 0 || segments.length > 0 || centerVisible,
+  };
+}
+
+export function isProjectedPointVisible(point, width, height) {
+  return Boolean(point && isPointInViewport(point, width, height));
+}
+
+function isPointInViewport(point, width, height, margin = 0) {
+  return (
+    point.x >= -margin &&
+    point.x <= width + margin &&
+    point.y >= -margin &&
+    point.y <= height + margin
+  );
+}
+
+function clipSegmentToViewport(start, end, width, height) {
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const boundaries = [
+    [-deltaX, start.x],
+    [deltaX, width - start.x],
+    [-deltaY, start.y],
+    [deltaY, height - start.y],
+  ];
+  let startRatio = 0;
+  let endRatio = 1;
+
+  for (const [direction, distance] of boundaries) {
+    if (Math.abs(direction) < VECTOR_EPSILON) {
+      if (distance < 0) return null;
+      continue;
+    }
+
+    const ratio = distance / direction;
+    if (direction < 0) startRatio = Math.max(startRatio, ratio);
+    else endRatio = Math.min(endRatio, ratio);
+    if (startRatio > endRatio) return null;
+  }
+
+  return [
+    {
+      x: start.x + startRatio * deltaX,
+      y: start.y + startRatio * deltaY,
+    },
+    {
+      x: start.x + endRatio * deltaX,
+      y: start.y + endRatio * deltaY,
+    },
+  ];
 }
 
 export function projectBodyGuidance(
