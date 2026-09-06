@@ -1,10 +1,14 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { OVERLAY_FRAME_INTERVAL } from '../constants';
 import styles from '../styles';
 import { buildOrientationFrame } from '../utils/orientation';
-import { projectBody, projectHorizon } from '../utils/projection';
+import {
+  projectBody,
+  projectBodyGuidance,
+  projectHorizon,
+} from '../utils/projection';
 
 function SkyOverlay({
   appState,
@@ -17,16 +21,29 @@ function SkyOverlay({
   orientationRef,
   bodiesRef,
   profilesRef,
+  selectedBodyId,
   onOrientationReady,
 }) {
   const [overlay, setOverlay] = useState({
     bodies: [],
     horizon: null,
+    guidance: null,
+    selectedVisible: null,
   });
+  const selectedBodyIdRef = useRef(selectedBodyId);
+
+  useEffect(() => {
+    selectedBodyIdRef.current = selectedBodyId;
+  }, [selectedBodyId]);
 
   useEffect(() => {
     if (appState !== 'active') {
-      setOverlay({ bodies: [], horizon: null });
+      setOverlay({
+        bodies: [],
+        horizon: null,
+        guidance: null,
+        selectedVisible: null,
+      });
       onOrientationReady(false);
       return undefined;
     }
@@ -63,7 +80,12 @@ function SkyOverlay({
       if (!frame) {
         if (hadProjection) {
           hadProjection = false;
-          setOverlay({ bodies: [], horizon: null });
+          setOverlay({
+            bodies: [],
+            horizon: null,
+            guidance: null,
+            selectedVisible: null,
+          });
         }
         return;
       }
@@ -80,9 +102,35 @@ function SkyOverlay({
           projectBody(body, frame, orientation, profile, width, height)
         )
         .filter(Boolean);
+      const activeBodyId = selectedBodyIdRef.current;
+      const selectedBody = activeBodyId
+        ? bodiesRef.current.find((body) => body.id === activeBodyId)
+        : null;
+      const selectedVisible = selectedBody
+        ? bodies.find(
+            (body) =>
+              body.id === selectedBody.id &&
+              body.x >= 0 &&
+              body.x <= width &&
+              body.y >= 0 &&
+              body.y <= height
+          ) || null
+        : null;
 
       setOverlay({
         bodies,
+        selectedVisible,
+        guidance:
+          selectedBody && !selectedVisible
+            ? projectBodyGuidance(
+                selectedBody,
+                frame,
+                orientation,
+                profile,
+                width,
+                height
+              )
+            : null,
         horizon: projectHorizon(
           frame,
           orientation,
@@ -120,8 +168,27 @@ function SkyOverlay({
       <Horizon horizon={overlay.horizon} />
 
       {overlay.bodies.map((body) => (
-        <BodyMarker key={body.id} body={body} />
+        <BodyMarker
+          key={body.id}
+          body={body}
+          selected={body.id === selectedBodyId}
+        />
       ))}
+
+      {overlay.guidance && <TargetGuide guidance={overlay.guidance} />}
+      {overlay.selectedVisible && (
+        <View style={styles.targetVisibleBadge}>
+          <View
+            style={[
+              styles.targetVisibleDot,
+              { backgroundColor: overlay.selectedVisible.color },
+            ]}
+          />
+          <Text style={styles.targetVisibleText}>
+            {overlay.selectedVisible.name} está en pantalla
+          </Text>
+        </View>
+      )}
 
       <View
         style={[
@@ -160,7 +227,7 @@ function Horizon({ horizon }) {
   );
 }
 
-function BodyMarker({ body }) {
+function BodyMarker({ body, selected }) {
   return (
     <View
       style={[
@@ -173,9 +240,39 @@ function BodyMarker({ body }) {
         },
       ]}
     >
-      <View style={[styles.bodyDot, { backgroundColor: body.color }]} />
+      <View
+        style={[
+          styles.bodyDot,
+          { backgroundColor: body.color },
+          selected && styles.bodyDotSelected,
+        ]}
+      />
       <Text style={styles.bodyName}>{body.name}</Text>
       <Text style={styles.bodyAltitude}>{body.altitude.toFixed(1)}°</Text>
+    </View>
+  );
+}
+
+function TargetGuide({ guidance }) {
+  return (
+    <View
+      style={[
+        styles.targetGuide,
+        {
+          left: guidance.x - 54,
+          top: guidance.y - 34,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.targetArrow,
+          { transform: [{ rotate: `${guidance.angle}deg` }] },
+        ]}
+      >
+        ➤
+      </Text>
+      <Text style={styles.targetGuideName}>{guidance.name}</Text>
     </View>
   );
 }

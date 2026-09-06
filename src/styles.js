@@ -21,28 +21,59 @@ const styles = StyleSheet.create({
 
   statusCard: {
     position: 'absolute',
-    top: 42,
-    left: 12,
-    right: 12,
-    maxWidth: 430,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(3, 8, 20, 0.76)',
+    top: 48,
+    left: 78,
+    right: 16,
+    maxWidth: 290,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: 'rgba(4, 10, 25, 0.82)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.28)',
   },
 
   statusTitle: {
     color: '#fff',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 3,
   },
 
   statusText: {
-    color: '#eef2ff',
-    fontSize: 12,
-    lineHeight: 17,
+    color: '#cbd5e1',
+    fontSize: 11,
+    lineHeight: 15,
+  },
+
+  statusSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  statusCopy: {
+    flexShrink: 1,
+  },
+
+  statusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    marginRight: 9,
+    backgroundColor: '#fbbf24',
+  },
+
+  statusDotReady: {
+    backgroundColor: '#34d399',
+  },
+
+  statusDotError: {
+    backgroundColor: '#fb7185',
+  },
+
+  statusDetail: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 5,
   },
 
   diagnosticText: {
@@ -142,6 +173,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  bodyDotSelected: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+
   bodyDot: {
     width: 18,
     height: 18,
@@ -186,6 +225,355 @@ const styles = StyleSheet.create({
     width: 1,
     height: 26,
     backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+
+  targetGuide: {
+    position: 'absolute',
+    width: 108,
+    alignItems: 'center',
+  },
+
+  targetArrow: {
+    color: '#fff',
+    fontSize: 34,
+    lineHeight: 38,
+    textShadowColor: 'rgba(56, 189, 248, 0.95)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+
+  targetGuideName: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: -2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(3, 8, 20, 0.86)',
+  },
+
+  targetVisibleBadge: {
+    position: 'absolute',
+    left: '50%',
+    bottom: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 210,
+    marginLeft: -105,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 18,
+    backgroundColor: 'rgba(3, 8, 20, 0.86)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+
+  targetVisibleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+
+  targetVisibleText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  menuArea: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    elevation: 100,
+    alignItems: 'flex-start',
+  },
+
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    backgroundColor: 'rgba(0, 0, 0, 0.52)',
+  },
+
+  menuBackdropPressable: {
+    flex: 1,
+  },
+
+  menuButton: {
+    position: 'absolute',
+    top: 46,
+    left: 16,
+    zIndex: 102,
+    elevation: 102,
+    width: 46,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 23,
+    backgroundColor: 'rgba(4, 10, 25, 0.88)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+
+  menuButtonOpen: {
+    backgroundColor: '#2563eb',
+  },
+
+  menuButtonIcon: {
+    color: '#fff',
+    fontSize: 25,
+    lineHeight: 28,
+    fontWeight: '500',
+  },
+
+  menuPanel: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 101,
+    elevation: 101,
+    bottom: 0,
+    width: 320,
+    maxWidth: '88%',
+    paddingTop: 110,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: 'rgba(3, 8, 20, 0.99)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 6, height: 0 },
+  },
+
+  drawerHeader: {
+    marginBottom: 20,
+  },
+
+  drawerTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+
+  drawerSubtitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 5,
+  },
+
+  menuSectionHeader: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 15,
+    backgroundColor: 'rgba(30, 64, 175, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(96, 165, 250, 0.8)',
+  },
+
+  menuSectionTitle: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  menuSectionChevron: {
+    color: '#dbeafe',
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+
+  menuTabs: {
+    flexDirection: 'row',
+    padding: 3,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+  },
+
+  menuTab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 9,
+  },
+
+  menuTabActive: {
+    backgroundColor: '#2563eb',
+  },
+
+  menuTabText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  menuTabTextActive: {
+    color: '#fff',
+  },
+
+  menuEyebrow: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+
+  menuTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 3,
+    marginBottom: 12,
+  },
+
+  menuScroll: {
+    flex: 1,
+  },
+
+  menuScrollContent: {
+    paddingBottom: 14,
+  },
+
+  bodyList: {
+    gap: 6,
+    marginTop: 8,
+  },
+
+  bodyGroup: {
+    marginBottom: 13,
+  },
+
+  bodyGroupTitle: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 7,
+    textTransform: 'uppercase',
+  },
+
+  bodyGrid: {
+    gap: 6,
+  },
+
+  bodyChoice: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 11,
+    borderRadius: 13,
+    backgroundColor: 'rgba(30, 41, 59, 0.72)',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+
+  bodyChoiceSelected: {
+    backgroundColor: 'rgba(30, 64, 175, 0.72)',
+    borderColor: '#60a5fa',
+  },
+
+  bodyChoiceDot: {
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    marginRight: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#fff',
+  },
+
+  bodyChoiceName: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  bodyChoiceAction: {
+    color: '#bae6fd',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  stopGuideButton: {
+    alignItems: 'center',
+    paddingVertical: 9,
+    marginTop: 4,
+  },
+
+  calibrationDisclosure: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(148, 163, 184, 0.35)',
+  },
+
+  calibrationDisclosureText: {
+    flex: 1,
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  calibrationDisclosureChevron: {
+    color: '#94a3b8',
+    fontSize: 18,
+  },
+
+  stopGuideText: {
+    color: '#fda4af',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  calibrateMenuButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#1e293b',
+  },
+
+  calibrateMenuButtonDisabled: {
+    opacity: 0.6,
+  },
+
+  calibrateMenuText: {
+    color: '#e2e8f0',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  calibrationMenuContent: {
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+
+  calibrationProfileName: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+
+  calibrationDescription: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: -5,
+    marginBottom: 10,
   },
 
   bottomArea: {

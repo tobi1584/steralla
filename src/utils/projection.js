@@ -25,16 +25,11 @@ export function projectBody(body, frame, orientation, profile, width, height) {
     return null;
   }
 
-  const world = horizontalToWorld(body.azimuth, body.altitude);
-  const device = add(
-    add(scale(frame.east, world[0]), scale(frame.north, world[1])),
-    scale(frame.up, world[2])
+  const { xCamera, yCamera, zCamera } = getBodyCameraVector(
+    body,
+    frame,
+    orientation
   );
-  const camera = getCameraAxes(orientation);
-
-  const xCamera = dot(device, camera.right);
-  const yCamera = dot(device, camera.up);
-  const zCamera = dot(device, camera.forward);
 
   if (!Number.isFinite(zCamera) || zCamera <= VECTOR_EPSILON) {
     return null;
@@ -74,6 +69,97 @@ export function projectBody(body, frame, orientation, profile, width, height) {
   }
 
   return { ...body, x, y };
+}
+
+export function projectBodyGuidance(
+  body,
+  frame,
+  orientation,
+  profile,
+  width,
+  height
+) {
+  if (
+    !frame ||
+    !Number.isFinite(body.azimuth) ||
+    !Number.isFinite(body.altitude) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
+
+  const { xCamera, yCamera, zCamera } = getBodyCameraVector(
+    body,
+    frame,
+    orientation
+  );
+  let directionX = xCamera;
+  let directionY = -yCamera;
+
+  if (zCamera > VECTOR_EPSILON) {
+    const horizontalScale = Math.tan((profile.horizontalFov * DEG) / 2);
+    const verticalScale = Math.tan((profile.verticalFov * DEG) / 2);
+    const horizontalAngle =
+      Math.atan2(xCamera, zCamera) - profile.horizontalOffset * DEG;
+    const verticalAngle =
+      Math.atan2(yCamera, zCamera) - profile.verticalOffset * DEG;
+
+    directionX = Math.tan(horizontalAngle) / horizontalScale;
+    directionY = -Math.tan(verticalAngle) / verticalScale;
+  } else {
+    // Si el objetivo está detrás, una proyección en perspectiva deja de ser
+    // útil. Los ángulos de giro e inclinación mantienen la flecha apuntando
+    // hacia el camino más corto hasta volver a meterlo en el encuadre.
+    const horizontalAngle =
+      Math.atan2(xCamera, zCamera) - profile.horizontalOffset * DEG;
+    const verticalAngle =
+      Math.atan2(yCamera, Math.hypot(xCamera, zCamera)) -
+      profile.verticalOffset * DEG;
+
+    directionX = horizontalAngle / (profile.horizontalFov * DEG * 0.5);
+    directionY = -verticalAngle / (profile.verticalFov * DEG * 0.5);
+  }
+
+  if (!Number.isFinite(directionX) || !Number.isFinite(directionY)) {
+    return null;
+  }
+  if (Math.hypot(directionX, directionY) < VECTOR_EPSILON) {
+    directionX = 1;
+  }
+
+  const horizontalInset = Math.min(62, width * 0.18);
+  const verticalInset = Math.min(100, height * 0.16);
+  const availableX = Math.max(1, width / 2 - horizontalInset);
+  const availableY = Math.max(1, height / 2 - verticalInset);
+  const edgeScale = Math.min(
+    availableX / Math.max(Math.abs(directionX), VECTOR_EPSILON),
+    availableY / Math.max(Math.abs(directionY), VECTOR_EPSILON)
+  );
+
+  return {
+    id: body.id,
+    name: body.name,
+    color: body.color,
+    x: width / 2 + directionX * edgeScale,
+    y: height / 2 + directionY * edgeScale,
+    angle: (Math.atan2(directionY, directionX) * 180) / Math.PI,
+  };
+}
+
+function getBodyCameraVector(body, frame, orientation) {
+  const world = horizontalToWorld(body.azimuth, body.altitude);
+  const device = add(
+    add(scale(frame.east, world[0]), scale(frame.north, world[1])),
+    scale(frame.up, world[2])
+  );
+  const camera = getCameraAxes(orientation);
+
+  return {
+    xCamera: dot(device, camera.right),
+    yCamera: dot(device, camera.up),
+    zCamera: dot(device, camera.forward),
+  };
 }
 
 function createLineStyle(pointA, pointB) {

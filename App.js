@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import BottomControls from './src/components/BottomControls';
 import CameraPreview from './src/components/CameraPreview';
+import CelestialMenu from './src/components/CelestialMenu';
 import SkyOverlay from './src/components/SkyOverlay';
 import StatusPanel from './src/components/StatusPanel';
 import useAppState from './src/hooks/useAppState';
@@ -14,6 +15,7 @@ import styles from './src/styles';
 
 export default function App() {
   const { width, height } = useWindowDimensions();
+  const [selectedBodyId, setSelectedBodyId] = useState(null);
   const appState = useAppState();
   const camera = useCameraAccess();
   const tracking = useDeviceTracking({
@@ -25,9 +27,8 @@ export default function App() {
   const celestial = useCelestialBodies(appState, tracking.location);
   const projection = useProjectionProfiles(tracking.orientation);
   const cameraGranted = camera.permission?.granted;
-  const sun = celestial.bodies.find((body) => body.id === 'Sun');
   const showRetry =
-    !camera.permission ||
+    camera.requestSettled &&
     hasBlockingServiceError(
       camera.permission,
       camera.status,
@@ -61,34 +62,31 @@ export default function App() {
         orientationRef={tracking.orientationRef}
         bodiesRef={celestial.bodiesRef}
         profilesRef={projection.profilesRef}
+        selectedBodyId={selectedBodyId}
         onOrientationReady={tracking.setOrientationReady}
       />
 
       <StatusPanel
-        location={tracking.location}
         locationStatus={tracking.locationStatus}
-        locationUpdated={tracking.locationUpdated}
-        heading={tracking.heading}
-        orientation={tracking.orientation}
         orientationReady={tracking.orientationReady}
-        sensorStatus={tracking.sensorStatus}
-        ephemerisUpdated={celestial.updatedAt}
         ephemerisError={celestial.error}
         cameraStatus={camera.status}
         cameraGranted={cameraGranted}
         calibrationHint={tracking.calibrationHint}
         calibrationMessage={tracking.calibrationMessage}
-        sun={sun}
         showRetry={showRetry}
         onRetry={camera.retry}
       />
 
-      <BottomControls
+      <CelestialMenu
+        bodies={celestial.bodies}
+        selectedBodyId={selectedBodyId}
+        onSelectBody={setSelectedBodyId}
         profileName={projection.profileName}
         profile={projection.profile}
-        celestialBodies={celestial.bodies}
         onChangeProfile={projection.changeProfile}
         onRecalibrate={tracking.recalibrate}
+        calibrationActive={tracking.calibrationHint}
       />
 
       <StatusBar style="light" />
