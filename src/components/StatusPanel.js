@@ -1,76 +1,42 @@
 import { Pressable, Text, View } from 'react-native';
 
 import styles from '../styles';
-import {
-  compassQuality,
-  formatTime,
-  orientationLabel,
-} from '../utils/formatters';
 
 export default function StatusPanel({
-  location,
   locationStatus,
-  locationUpdated,
-  heading,
-  orientation,
   orientationReady,
-  sensorStatus,
-  ephemerisUpdated,
   ephemerisError,
   cameraStatus,
   cameraGranted,
   calibrationHint,
   calibrationMessage,
-  sun,
   showRetry,
   onRetry,
 }) {
+  const locationReady = locationStatus === 'Ubicación activa';
+  const hasError =
+    showRetry || cameraStatus.state === 'error' || Boolean(ephemerisError);
+
   return (
     <View style={styles.statusCard}>
-      <Text style={styles.statusTitle}>Mapa celeste 3D</Text>
-      <Text style={styles.statusText} numberOfLines={1}>
-        {locationStatus}
-      </Text>
-
-      {location && <LocationCoordinates location={location} />}
-
-      <Text style={styles.statusText}>
-        Norte {heading.mode}:{' '}
-        {Number.isFinite(heading.degrees)
-          ? `${heading.degrees.toFixed(1)}°`
-          : '—'}
-        {' · calidad '}
-        {compassQuality(heading.accuracy)}
-      </Text>
-
-      {sun && Number.isFinite(sun.azimuth) && (
-        <Text style={styles.diagnosticText}>
-          ☀️ Sol → Az {sun.azimuth.toFixed(1)}° · Alt{' '}
-          {sun.altitude.toFixed(1)}°
-        </Text>
-      )}
-
-      {heading.error && (
-        <Text style={styles.errorText}>
-          Brújula del sistema: {heading.error}
-        </Text>
-      )}
-
-      <Text style={styles.statusText}>
-        Orientación: {orientationLabel(orientation)} ·{' '}
-        {orientationReady ? 'seguimiento activo' : 'esperando sensores'}
-      </Text>
-      <Text style={styles.statusText}>
-        Sensores: movimiento {sensorStatus.motion} · campo{' '}
-        {sensorStatus.magnetometer}
-      </Text>
-      <Text style={styles.statusTime}>
-        GPS {formatTime(locationUpdated)} · cielo{' '}
-        {formatTime(ephemerisUpdated)}
-      </Text>
+      <View style={styles.statusSummary}>
+        <View
+          style={[
+            styles.statusDot,
+            locationReady && orientationReady && styles.statusDotReady,
+            hasError && styles.statusDotError,
+          ]}
+        />
+        <View style={styles.statusCopy}>
+          <Text style={styles.statusTitle}>Explora el cielo</Text>
+          <Text style={styles.statusText} numberOfLines={1}>
+            {getFriendlyStatus(locationStatus, orientationReady)}
+          </Text>
+        </View>
+      </View>
 
       {cameraStatus.state === 'loading' && cameraGranted && (
-        <Text style={styles.statusTime}>Iniciando cámara…</Text>
+        <Text style={styles.statusDetail}>Iniciando cámara…</Text>
       )}
       {cameraStatus.state === 'error' && (
         <Text style={styles.errorText}>
@@ -82,7 +48,7 @@ export default function StatusPanel({
       )}
       {calibrationHint && (
         <Text style={styles.hintText}>
-          ♾️ Mueve el móvil haciendo ochos y gíralo en varias direcciones.
+          Mueve el móvil haciendo ochos para calibrarlo.
         </Text>
       )}
       {calibrationMessage && (
@@ -104,13 +70,12 @@ export default function StatusPanel({
   );
 }
 
-function LocationCoordinates({ location }) {
-  const { latitude, longitude, altitude } = location.coords;
+function getFriendlyStatus(locationStatus, orientationReady) {
+  if (locationStatus === 'Ubicación activa') {
+    return orientationReady ? 'Listo para buscar' : 'Preparando orientación…';
+  }
 
-  return (
-    <Text style={styles.statusText}>
-      {latitude.toFixed(4)}, {longitude.toFixed(4)} ·{' '}
-      {Number.isFinite(altitude) ? `${altitude.toFixed(0)} m` : 'altitud —'}
-    </Text>
-  );
+  if (locationStatus.includes('denegado')) return 'Ubicación no disponible';
+  if (locationStatus.startsWith('Error')) return 'No encontramos tu ubicación';
+  return 'Buscando tu ubicación…';
 }
