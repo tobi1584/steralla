@@ -217,6 +217,11 @@ function calculateHorizontalPosition(body, observer, date) {
     'normal'
   );
 
+  const moonPhase =
+    body.id === 'Moon'
+      ? calculateMoonPhase(date, observer.latitude)
+      : undefined;
+
   return {
     ...body,
     azimuth: Number.isFinite(horizontal.azimuth)
@@ -225,5 +230,32 @@ function calculateHorizontalPosition(body, observer, date) {
     altitude: Number.isFinite(horizontal.altitude)
       ? horizontal.altitude
       : null,
+    ...(moonPhase ? { moonPhase } : {}),
   };
+}
+
+function calculateMoonPhase(date, latitude) {
+  const angle = Astronomy.MoonPhase(date);
+  const { phase_fraction: illuminatedFraction } = Astronomy.Illumination(
+    Astronomy.Body.Moon,
+    date
+  );
+
+  return {
+    angle,
+    hemisphere: latitude < 0 ? 'south' : 'north',
+    illuminatedFraction,
+    label: getMoonPhaseLabel(angle),
+  };
+}
+
+function getMoonPhaseLabel(angle) {
+  if (angle < 10 || angle >= 350) return 'Luna nueva';
+  if (angle < 80) return 'Creciente';
+  if (angle < 100) return 'Cuarto creciente';
+  if (angle < 170) return 'Gibosa creciente';
+  if (angle < 190) return 'Luna llena';
+  if (angle < 260) return 'Gibosa menguante';
+  if (angle < 280) return 'Cuarto menguante';
+  return 'Menguante';
 }

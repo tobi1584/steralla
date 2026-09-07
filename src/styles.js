@@ -21,10 +21,10 @@ const styles = StyleSheet.create({
 
   statusCard: {
     position: 'absolute',
-    top: 48,
-    left: 78,
+    top: 58,
+    left: 105,
     right: 16,
-    maxWidth: 290,
+    maxWidth: 190,
     paddingHorizontal: 13,
     paddingVertical: 10,
     borderRadius: 18,
@@ -136,14 +136,10 @@ const styles = StyleSheet.create({
 
   horizonLabel: {
     position: 'absolute',
-    width: 104,
+    width: 78,
+    height: 14,
     alignItems: 'center',
-    borderRadius: 9,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(8, 51, 68, 0.82)',
-    borderColor: 'rgba(165, 243, 252, 0.8)',
-    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
   },
 
   horizonIndicator: {
@@ -160,48 +156,26 @@ const styles = StyleSheet.create({
 
   horizonLabelText: {
     color: '#cffafe',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(3, 7, 19, 0.95)',
+    textShadowRadius: 3,
   },
 
   bodyMarker: {
     position: 'absolute',
     left: 0,
     top: 0,
-    width: 76,
+    width: 130,
     alignItems: 'center',
-  },
-
-  bodyDotSelected: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: '#fff',
-  },
-
-  bodyDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#fff',
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 7,
   },
 
   bodyName: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: -7,
     textShadowColor: '#000',
     textShadowRadius: 3,
   },
@@ -209,6 +183,14 @@ const styles = StyleSheet.create({
   bodyAltitude: {
     color: '#e2e8f0',
     fontSize: 10,
+    textShadowColor: '#000',
+    textShadowRadius: 3,
+  },
+
+  bodyPhase: {
+    color: '#f8fafc',
+    fontSize: 10,
+    fontWeight: '700',
     textShadowColor: '#000',
     textShadowRadius: 3,
   },
@@ -395,7 +377,7 @@ const styles = StyleSheet.create({
 
   menuButton: {
     position: 'absolute',
-    top: 46,
+    top: 62,
     left: 16,
     zIndex: 102,
     elevation: 102,
@@ -587,7 +569,7 @@ const styles = StyleSheet.create({
   },
 
   bodyChoice: {
-    minHeight: 43,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 11,
@@ -602,20 +584,28 @@ const styles = StyleSheet.create({
     borderColor: '#60a5fa',
   },
 
-  bodyChoiceDot: {
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    marginRight: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#fff',
+  bodyChoiceIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+
+  bodyChoiceCopy: {
+    flex: 1,
   },
 
   bodyChoiceName: {
-    flex: 1,
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  bodyChoiceDetail: {
+    color: '#cbd5e1',
+    fontSize: 10,
+    marginTop: 1,
   },
 
   bodyChoiceAction: {

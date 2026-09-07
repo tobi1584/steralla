@@ -405,11 +405,7 @@ export function projectHorizon(frame, orientation, profile, width, height) {
 
     return {
       visible: true,
-      lineStyle: createLineStyle(pointA, pointB),
-      labelStyle: {
-        left: Math.min(width - 116, projectedX + 7),
-        top: height / 2 - 24,
-      },
+      ...createLabeledHorizon(pointA, pointB),
     };
   }
 
@@ -449,15 +445,43 @@ export function projectHorizon(frame, orientation, profile, width, height) {
   }
 
   const [pointA, pointB] = clipped;
-  const labelX = (pointA.x + pointB.x) / 2 - 52;
-  const labelY = (pointA.y + pointB.y) / 2 - 25;
 
   return {
     visible: true,
-    lineStyle: createLineStyle(pointA, pointB),
+    ...createLabeledHorizon(pointA, pointB),
+  };
+}
+
+function createLabeledHorizon(pointA, pointB) {
+  const deltaX = pointB.x - pointA.x;
+  const deltaY = pointB.y - pointA.y;
+  const length = Math.hypot(deltaX, deltaY);
+  const midpoint = {
+    x: (pointA.x + pointB.x) / 2,
+    y: (pointA.y + pointB.y) / 2,
+  };
+  const labelWidth = 78;
+  const halfGap = Math.min(labelWidth / 2, Math.max(0, length / 2 - 2));
+  const directionX = length > VECTOR_EPSILON ? deltaX / length : 1;
+  const directionY = length > VECTOR_EPSILON ? deltaY / length : 0;
+  const firstEnd = {
+    x: midpoint.x - directionX * halfGap,
+    y: midpoint.y - directionY * halfGap,
+  };
+  const secondStart = {
+    x: midpoint.x + directionX * halfGap,
+    y: midpoint.y + directionY * halfGap,
+  };
+
+  return {
+    lineStyles: [
+      createLineStyle(pointA, firstEnd),
+      createLineStyle(secondStart, pointB),
+    ],
     labelStyle: {
-      left: Math.max(8, Math.min(width - 112, labelX)),
-      top: Math.max(8, Math.min(height - 34, labelY)),
+      left: midpoint.x - labelWidth / 2,
+      top: midpoint.y - 7,
+      transform: [{ rotate: `${Math.atan2(deltaY, deltaX)}rad` }],
     },
   };
 }

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import {
   ADDITIONAL_CONSTELLATIONS,
   ADDITIONAL_CONSTELLATION_STARS,
@@ -5,7 +7,9 @@ import {
 
 export const DEG = Math.PI / 180;
 export const OVERLAY_FRAME_INTERVAL = 1000 / 30;
-export const SENSOR_INTERVAL = OVERLAY_FRAME_INTERVAL;
+export const SKY_DETAIL_FRAME_INTERVAL =
+  Platform.OS === 'android' ? 1000 / 15 : OVERLAY_FRAME_INTERVAL;
+export const SENSOR_INTERVAL = 1000 / 30;
 export const EPHEMERIS_INTERVAL = 15000;
 export const GRAVITY_SMOOTHING = 0.2;
 export const MAGNETIC_SMOOTHING = 0.18;

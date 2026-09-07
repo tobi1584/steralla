@@ -1,9 +1,13 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { OVERLAY_FRAME_INTERVAL } from '../constants';
+import {
+  OVERLAY_FRAME_INTERVAL,
+  SKY_DETAIL_FRAME_INTERVAL,
+} from '../constants';
 import styles from '../styles';
 import { buildOrientationFrame } from '../utils/orientation';
+import CelestialBodyIcon from './CelestialBodyIcon';
 import {
   projectBody,
   projectBodyGuidance,
@@ -58,8 +62,11 @@ function SkyOverlay({
 
     let animationFrame = null;
     let lastFrameTime = -Infinity;
+    let lastSkyDetailTime = -Infinity;
     let lastReadiness = null;
     let hadProjection = false;
+    let projectedConstellations = [];
+    let projectedDeepSkyObjects = [];
 
     const publishReadiness = (ready) => {
       if (ready !== lastReadiness) {
@@ -112,23 +119,27 @@ function SkyOverlay({
           projectBody(body, frame, orientation, profile, width, height)
         )
         .filter(Boolean);
-      const constellations = constellationsRef.current
-        .map((constellation) =>
-          projectConstellation(
-            constellation,
-            frame,
-            orientation,
-            profile,
-            width,
-            height
+
+      if (time - lastSkyDetailTime >= SKY_DETAIL_FRAME_INTERVAL) {
+        lastSkyDetailTime = time;
+        projectedConstellations = constellationsRef.current
+          .map((constellation) =>
+            projectConstellation(
+              constellation,
+              frame,
+              orientation,
+              profile,
+              width,
+              height
+            )
           )
-        )
-        .filter((constellation) => constellation.visible);
-      const deepSkyObjects = deepSkyObjectsRef.current
-        .map((object) =>
-          projectBody(object, frame, orientation, profile, width, height)
-        )
-        .filter(Boolean);
+          .filter((constellation) => constellation.visible);
+        projectedDeepSkyObjects = deepSkyObjectsRef.current
+          .map((object) =>
+            projectBody(object, frame, orientation, profile, width, height)
+          )
+          .filter(Boolean);
+      }
       const activeBodyId = selectedBodyIdRef.current;
       const selectedBody = findSkyTarget(
         activeBodyId,
@@ -156,8 +167,8 @@ function SkyOverlay({
 
       setOverlay({
         bodies,
-        constellations,
-        deepSkyObjects,
+        constellations: projectedConstellations,
+        deepSkyObjects: projectedDeepSkyObjects,
         selectedVisible,
         guidance:
           selectedBody && !selectedVisible
@@ -276,41 +287,52 @@ function Horizon({ horizon }) {
 
   return (
     <>
-      <View style={[styles.horizonLine, horizon.lineStyle]} />
+      {horizon.lineStyles.map((lineStyle, index) => (
+        <View
+          key={`horizon-${index}`}
+          style={[styles.horizonLine, lineStyle]}
+        />
+      ))}
       <View style={[styles.horizonLabel, horizon.labelStyle]}>
-        <Text style={styles.horizonLabelText}>HORIZONTE · 0°</Text>
+        <Text style={styles.horizonLabelText}>HORIZONTE</Text>
       </View>
     </>
   );
 }
 
 function BodyMarker({ body, selected }) {
+  const iconSize = selected ? 22 : 18;
+  const iconFrameSize = iconSize * 2.15;
+  const phase = body.moonPhase;
+
   return (
     <View
       style={[
         styles.bodyMarker,
         {
           transform: [
-            { translateX: body.x - 38 },
-            { translateY: body.y - 16 },
+            { translateX: body.x - 65 },
+            { translateY: body.y - iconFrameSize / 2 },
           ],
         },
       ]}
     >
-      <View
-        style={[
-          styles.bodyDot,
-          { backgroundColor: body.color },
-          selected && styles.bodyDotSelected,
-        ]}
-      />
+      <CelestialBodyIcon body={body} selected={selected} size={iconSize} />
       <Text style={styles.bodyName}>{body.name}</Text>
+      {phase && (
+        <Text style={styles.bodyPhase}>
+          {phase.label} · {Math.round(phase.illuminatedFraction * 100)}%
+        </Text>
+      )}
       <Text style={styles.bodyAltitude}>{body.altitude.toFixed(1)}°</Text>
     </View>
   );
 }
 
-function Constellation({ constellation, selectedBodyId }) {
+const Constellation = memo(function Constellation({
+  constellation,
+  selectedBodyId,
+}) {
   const selected = constellation.id === selectedBodyId;
   const polarisSelected = selectedBodyId === 'Polaris';
 
@@ -371,9 +393,9 @@ function Constellation({ constellation, selectedBodyId }) {
       )}
     </>
   );
-}
+});
 
-function DeepSkyMarker({ object, selected }) {
+const DeepSkyMarker = memo(function DeepSkyMarker({ object, selected }) {
   return (
     <View
       style={[
@@ -400,7 +422,7 @@ function DeepSkyMarker({ object, selected }) {
       </Text>
     </View>
   );
-}
+});
 
 function TargetGuide({ guidance }) {
   return (

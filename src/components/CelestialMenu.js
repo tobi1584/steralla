@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import styles from '../styles';
+import CelestialBodyIcon from './CelestialBodyIcon';
 import ControlRow from './ControlRow';
 
 const CLOSED_DRAWER_OFFSET = -360;
@@ -238,6 +239,8 @@ function TargetGroup({ label, targets, selectedBodyId, onSelect }) {
 }
 
 function BodyChoice({ body, selected, onPress }) {
+  const phase = body.moonPhase;
+
   return (
     <Pressable
       accessibilityLabel={`Buscar ${body.name}`}
@@ -246,10 +249,18 @@ function BodyChoice({ body, selected, onPress }) {
       onPress={onPress}
       style={[styles.bodyChoice, selected && styles.bodyChoiceSelected]}
     >
-      <View
-        style={[styles.bodyChoiceDot, { backgroundColor: body.color }]}
-      />
-      <Text style={styles.bodyChoiceName}>{body.name}</Text>
+      <View style={styles.bodyChoiceIcon}>
+        <CelestialBodyIcon body={body} selected={selected} size={14} />
+      </View>
+      <View style={styles.bodyChoiceCopy}>
+        <Text style={styles.bodyChoiceName}>{body.name}</Text>
+        {phase && (
+          <Text style={styles.bodyChoiceDetail}>
+            {phase.label} · {Math.round(phase.illuminatedFraction * 100)}%
+            {' iluminada'}
+          </Text>
+        )}
+      </View>
       <Text style={styles.bodyChoiceAction}>
         {selected ? 'Guiando' : 'Buscar'}
       </Text>

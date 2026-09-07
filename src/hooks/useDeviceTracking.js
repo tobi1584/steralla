@@ -16,13 +16,6 @@ import {
   vectorFromMeasurement,
 } from '../utils/vector';
 
-const INITIAL_HEADING = {
-  degrees: null,
-  accuracy: null,
-  mode: 'magnético',
-  error: null,
-};
-
 const INITIAL_SENSOR_STATUS = {
   motion: 'comprobando',
   magnetometer: 'comprobando',
@@ -40,7 +33,6 @@ export default function useDeviceTracking({
     'Solicitando permiso…'
   );
   const [locationUpdated, setLocationUpdated] = useState(null);
-  const [heading, setHeading] = useState(INITIAL_HEADING);
   const [sensorStatus, setSensorStatus] = useState(INITIAL_SENSOR_STATUS);
   const [orientation, setOrientation] = useState(initialOrientation);
   const [orientationReady, setOrientationReady] = useState(false);
@@ -137,10 +129,10 @@ export default function useDeviceTracking({
 
         const headingSubscription = await Location.watchHeadingAsync(
           (data) => {
-            if (!disposed) publishHeading(data, headingRef, setHeading);
+            if (!disposed) publishHeading(data, headingRef);
           },
           (message) => {
-            if (!disposed) publishHeadingError(message, headingRef, setHeading);
+            if (!disposed) publishHeadingError(headingRef);
           }
         );
         registerSubscription(headingSubscription);
@@ -334,7 +326,6 @@ export default function useDeviceTracking({
     location,
     locationStatus,
     locationUpdated,
-    heading,
     sensorStatus,
     orientation,
     orientationReady,
@@ -355,7 +346,7 @@ function publishLocation(position, setLocation, setUpdatedAt) {
   setUpdatedAt(new Date(position.timestamp || Date.now()));
 }
 
-function publishHeading(data, headingRef, setHeading) {
+function publishHeading(data, headingRef) {
   const hasTrueNorth =
     Number.isFinite(data.trueHeading) && data.trueHeading >= 0;
   const hasMagneticNorth =
@@ -369,25 +360,10 @@ function publishHeading(data, headingRef, setHeading) {
         : 0,
     mode,
   };
-  setHeading({
-    degrees: hasTrueNorth
-      ? data.trueHeading
-      : hasMagneticNorth
-        ? data.magHeading
-        : null,
-    accuracy: Number.isFinite(data.accuracy) ? data.accuracy : null,
-    mode,
-    error: null,
-  });
 }
 
-function publishHeadingError(message, headingRef, setHeading) {
+function publishHeadingError(headingRef) {
   headingRef.current = { correction: 0, mode: 'magnético' };
-  setHeading((current) => ({
-    ...current,
-    mode: 'magnético',
-    error: message,
-  }));
 }
 
 function updateSensorStatus(setStatus, sensor, value) {
