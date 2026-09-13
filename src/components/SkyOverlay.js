@@ -18,10 +18,12 @@ import {
 
 function SkyOverlay({
   appState,
+  paused,
   width,
   height,
   gravityRef,
   magneticRef,
+  fusedFrameRef,
   headingRef,
   frameRef,
   orientationRef,
@@ -32,13 +34,15 @@ function SkyOverlay({
   selectedBodyId,
   onOrientationReady,
 }) {
-  const [overlay, setOverlay] = useState({
+  const [fastOverlay, setFastOverlay] = useState({
     bodies: [],
-    constellations: [],
-    deepSkyObjects: [],
     horizon: null,
     guidance: null,
     selectedVisible: null,
+  });
+  const [skyDetails, setSkyDetails] = useState({
+    constellations: [],
+    deepSkyObjects: [],
   });
   const selectedBodyIdRef = useRef(selectedBodyId);
 
@@ -48,25 +52,26 @@ function SkyOverlay({
 
   useEffect(() => {
     if (appState !== 'active') {
-      setOverlay({
+      setFastOverlay({
         bodies: [],
-        constellations: [],
-        deepSkyObjects: [],
         horizon: null,
         guidance: null,
         selectedVisible: null,
       });
+      setSkyDetails({ constellations: [], deepSkyObjects: [] });
       onOrientationReady(false);
       return undefined;
     }
 
+    // El fondo puede quedarse quieto mientras el cajon esta abierto. Esto
+    // libera el hilo de JavaScript para que los controles respondan al instante.
+    if (paused) return undefined;
+
     let animationFrame = null;
-    let lastFrameTime = -Infinity;
-    let lastSkyDetailTime = -Infinity;
+    let lastFrameTime = null;
+    let lastSkyDetailTime = null;
     let lastReadiness = null;
     let hadProjection = false;
-    let projectedConstellations = [];
-    let projectedDeepSkyObjects = [];
 
     const publishReadiness = (ready) => {
       if (ready !== lastReadiness) {
@@ -78,14 +83,28 @@ function SkyOverlay({
     const updateProjection = (time) => {
       animationFrame = requestAnimationFrame(updateProjection);
 
-      if (time - lastFrameTime < OVERLAY_FRAME_INTERVAL) return;
-      lastFrameTime = time;
-
-      const candidate = buildOrientationFrame(
-        gravityRef.current,
-        magneticRef.current,
-        headingRef.current.correction
+      const updateFastLayer = frameIsDue(
+        time,
+        lastFrameTime,
+        OVERLAY_FRAME_INTERVAL
       );
+      const updateSkyDetails = frameIsDue(
+        time,
+        lastSkyDetailTime,
+        SKY_DETAIL_FRAME_INTERVAL
+      );
+      if (!updateFastLayer && !updateSkyDetails) return;
+
+      if (updateFastLayer) lastFrameTime = time;
+      if (updateSkyDetails) lastSkyDetailTime = time;
+
+      const candidate =
+        fusedFrameRef?.current ||
+        buildOrientationFrame(
+          gravityRef.current,
+          magneticRef.current,
+          headingRef.current.correction
+        );
 
       if (candidate) frameRef.current = candidate;
 
@@ -95,14 +114,13 @@ function SkyOverlay({
       if (!frame) {
         if (hadProjection) {
           hadProjection = false;
-          setOverlay({
+          setFastOverlay({
             bodies: [],
-            constellations: [],
-            deepSkyObjects: [],
             horizon: null,
             guidance: null,
             selectedVisible: null,
           });
+          setSkyDetails({ constellations: [], deepSkyObjects: [] });
         }
         return;
       }
@@ -114,15 +132,8 @@ function SkyOverlay({
         ? 'landscape'
         : 'portrait';
       const profile = profilesRef.current[profileName];
-      const bodies = bodiesRef.current
-        .map((body) =>
-          projectBody(body, frame, orientation, profile, width, height)
-        )
-        .filter(Boolean);
-
-      if (time - lastSkyDetailTime >= SKY_DETAIL_FRAME_INTERVAL) {
-        lastSkyDetailTime = time;
-        projectedConstellations = constellationsRef.current
+      if (updateSkyDetails) {
+        const projectedConstellations = constellationsRef.current
           .map((constellation) =>
             projectConstellation(
               constellation,
@@ -134,12 +145,25 @@ function SkyOverlay({
             )
           )
           .filter((constellation) => constellation.visible);
-        projectedDeepSkyObjects = deepSkyObjectsRef.current
+        const projectedDeepSkyObjects = deepSkyObjectsRef.current
           .map((object) =>
             projectBody(object, frame, orientation, profile, width, height)
           )
           .filter(Boolean);
+
+        setSkyDetails({
+          constellations: projectedConstellations,
+          deepSkyObjects: projectedDeepSkyObjects,
+        });
       }
+
+      if (!updateFastLayer) return;
+
+      const bodies = bodiesRef.current
+        .map((body) =>
+          projectBody(body, frame, orientation, profile, width, height)
+        )
+        .filter(Boolean);
       const activeBodyId = selectedBodyIdRef.current;
       const selectedBody = findSkyTarget(
         activeBodyId,
@@ -165,10 +189,8 @@ function SkyOverlay({
         ? selectedBody
         : null;
 
-      setOverlay({
+      setFastOverlay({
         bodies,
-        constellations: projectedConstellations,
-        deepSkyObjects: projectedDeepSkyObjects,
         selectedVisible,
         guidance:
           selectedBody && !selectedVisible
@@ -202,12 +224,14 @@ function SkyOverlay({
     constellationsRef,
     deepSkyObjectsRef,
     frameRef,
+    fusedFrameRef,
     gravityRef,
     headingRef,
     height,
     magneticRef,
     onOrientationReady,
     orientationRef,
+    paused,
     profilesRef,
     width,
   ]);
@@ -217,25 +241,14 @@ function SkyOverlay({
       pointerEvents="none"
       style={[StyleSheet.absoluteFill, styles.skyOverlay]}
     >
-      <Horizon horizon={overlay.horizon} />
+      <Horizon horizon={fastOverlay.horizon} />
 
-      {overlay.constellations.map((constellation) => (
-        <Constellation
-          constellation={constellation}
-          key={constellation.id}
-          selectedBodyId={selectedBodyId}
-        />
-      ))}
+      <SkyDetails
+        details={skyDetails}
+        selectedBodyId={selectedBodyId}
+      />
 
-      {overlay.deepSkyObjects.map((object) => (
-        <DeepSkyMarker
-          key={object.id}
-          object={object}
-          selected={object.id === selectedBodyId}
-        />
-      ))}
-
-      {overlay.bodies.map((body) => (
+      {fastOverlay.bodies.map((body) => (
         <BodyMarker
           key={body.id}
           body={body}
@@ -243,17 +256,19 @@ function SkyOverlay({
         />
       ))}
 
-      {overlay.guidance && <TargetGuide guidance={overlay.guidance} />}
-      {overlay.selectedVisible && (
+      {fastOverlay.guidance && (
+        <TargetGuide guidance={fastOverlay.guidance} />
+      )}
+      {fastOverlay.selectedVisible && (
         <View style={styles.targetVisibleBadge}>
           <View
             style={[
               styles.targetVisibleDot,
-              { backgroundColor: overlay.selectedVisible.color },
+              { backgroundColor: fastOverlay.selectedVisible.color },
             ]}
           />
           <Text style={styles.targetVisibleText}>
-            {overlay.selectedVisible.name} está en pantalla
+            {fastOverlay.selectedVisible.name} está en pantalla
           </Text>
         </View>
       )}
@@ -273,6 +288,32 @@ function SkyOverlay({
     </View>
   );
 }
+
+function frameIsDue(time, previousTime, interval) {
+  return previousTime === null || time - previousTime >= interval - 1;
+}
+
+const SkyDetails = memo(function SkyDetails({ details, selectedBodyId }) {
+  return (
+    <>
+      {details.constellations.map((constellation) => (
+        <Constellation
+          constellation={constellation}
+          key={constellation.id}
+          selectedBodyId={selectedBodyId}
+        />
+      ))}
+
+      {details.deepSkyObjects.map((object) => (
+        <DeepSkyMarker
+          key={object.id}
+          object={object}
+          selected={object.id === selectedBodyId}
+        />
+      ))}
+    </>
+  );
+});
 
 function Horizon({ horizon }) {
   if (!horizon) return null;

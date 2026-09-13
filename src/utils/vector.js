@@ -46,6 +46,32 @@ export function smoothVector(previous, sample, factor = 0.16) {
   );
 }
 
+export function smoothVectorAdaptive(previous, sample, smoothing) {
+  if (!isFiniteVector(sample)) return previous;
+  if (!previous) return [...sample];
+
+  const previousMagnitude = Math.hypot(...previous);
+  const sampleMagnitude = Math.hypot(...sample);
+  if (
+    previousMagnitude < VECTOR_EPSILON ||
+    sampleMagnitude < VECTOR_EPSILON
+  ) {
+    return [...sample];
+  }
+
+  const cosine = Math.max(
+    -1,
+    Math.min(1, dot(previous, sample) / (previousMagnitude * sampleMagnitude))
+  );
+  const angle = (Math.acos(cosine) * 180) / Math.PI;
+  const response = Math.min(1, angle / smoothing.responseAngle);
+  const factor =
+    smoothing.minimum +
+    (smoothing.maximum - smoothing.minimum) * response;
+
+  return smoothVector(previous, sample, factor);
+}
+
 export function vectorFromMeasurement(measurement) {
   if (!measurement) return null;
 

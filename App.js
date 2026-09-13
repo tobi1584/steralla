@@ -16,6 +16,7 @@ import styles from './src/styles';
 export default function App() {
   const { width, height } = useWindowDimensions();
   const [selectedBodyId, setSelectedBodyId] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const appState = useAppState();
   const camera = useCameraAccess();
   const tracking = useDeviceTracking({
@@ -53,10 +54,12 @@ export default function App() {
 
       <SkyOverlay
         appState={appState}
+        paused={menuOpen}
         width={width}
         height={height}
         gravityRef={tracking.gravityRef}
         magneticRef={tracking.magneticRef}
+        fusedFrameRef={tracking.fusedFrameRef}
         headingRef={tracking.headingRef}
         frameRef={tracking.frameRef}
         orientationRef={tracking.orientationRef}
@@ -90,6 +93,7 @@ export default function App() {
         onChangeProfile={projection.changeProfile}
         onRecalibrate={tracking.recalibrate}
         calibrationActive={tracking.calibrationHint}
+        onOpenChange={setMenuOpen}
       />
 
       <StatusBar style="light" />

@@ -6,13 +6,25 @@ import {
 } from './data/additionalConstellations';
 
 export const DEG = Math.PI / 180;
-export const OVERLAY_FRAME_INTERVAL = 1000 / 30;
-export const SKY_DETAIL_FRAME_INTERVAL =
-  Platform.OS === 'android' ? 1000 / 15 : OVERLAY_FRAME_INTERVAL;
-export const SENSOR_INTERVAL = 1000 / 30;
+export const OVERLAY_FRAME_INTERVAL = Platform.OS === 'android'
+  ? 1000 / 30
+  : 1000 / 60;
+export const SKY_DETAIL_FRAME_INTERVAL = Platform.OS === 'android'
+  ? 1000 / 10
+  : 1000 / 30;
+export const SENSOR_INTERVAL = 1000 / 60;
 export const EPHEMERIS_INTERVAL = 15000;
-export const GRAVITY_SMOOTHING = 0.2;
-export const MAGNETIC_SMOOTHING = 0.18;
+export const GRAVITY_SMOOTHING = Platform.OS === 'android'
+  ? { minimum: 0.14, maximum: 0.72, responseAngle: 7 }
+  : { minimum: 0.18, maximum: 0.72, responseAngle: 7 };
+export const MAGNETIC_SMOOTHING = Platform.OS === 'android'
+  ? { minimum: 0.1, maximum: 0.62, responseAngle: 10 }
+  : { minimum: 0.16, maximum: 0.62, responseAngle: 10 };
+export const ORIENTATION_FRAME_SMOOTHING = {
+  minimum: 0.04,
+  maximum: 0.55,
+  responseAngle: 5,
+};
 export const VECTOR_EPSILON = 1e-6;
 export const CALIBRATION_DURATION = 8000;
 

@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -125,13 +125,13 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: 'rgba(103, 232, 249, 0.95)',
     shadowColor: '#083344',
-    shadowOpacity: 0.9,
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.9,
     shadowRadius: 3,
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    elevation: 5,
+    elevation: Platform.OS === 'android' ? 0 : 5,
   },
 
   horizonLabel: {
@@ -214,17 +214,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: 'rgba(241, 245, 249, 0.72)',
     shadowColor: '#fff',
-    shadowOpacity: 0.5,
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.5,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
+    elevation: Platform.OS === 'android' ? 0 : 2,
   },
 
   constellationStarSelected: {
     backgroundColor: '#fff',
     shadowOpacity: 0.95,
     shadowRadius: 7,
-    elevation: 5,
+    elevation: Platform.OS === 'android' ? 2 : 5,
   },
 
   constellationLabel: {
@@ -361,8 +361,11 @@ const styles = StyleSheet.create({
   menuArea: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
-    elevation: 100,
     alignItems: 'flex-start',
+  },
+
+  menuModal: {
+    flex: 1,
   },
 
   menuBackdrop: {
@@ -371,16 +374,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.52)',
   },
 
-  menuBackdropPressable: {
-    flex: 1,
-  },
-
   menuButton: {
     position: 'absolute',
     top: 62,
     left: 16,
     zIndex: 102,
-    elevation: 102,
+    elevation: 16,
     width: 46,
     height: 46,
     alignItems: 'center',
@@ -407,7 +406,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     zIndex: 101,
-    elevation: 101,
+    elevation: 12,
     bottom: 0,
     width: 320,
     maxWidth: '88%',

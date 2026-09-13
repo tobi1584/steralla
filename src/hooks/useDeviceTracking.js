@@ -7,11 +7,17 @@ import {
   CALIBRATION_DURATION,
   GRAVITY_SMOOTHING,
   MAGNETIC_SMOOTHING,
+  ORIENTATION_FRAME_SMOOTHING,
   SENSOR_INTERVAL,
 } from '../constants';
-import { getScreenOrientation } from '../utils/orientation';
 import {
-  smoothVector,
+  buildOrientationFrame,
+  buildOrientationFrameFromRotation,
+  getScreenOrientation,
+  smoothOrientationFrame,
+} from '../utils/orientation';
+import {
+  smoothVectorAdaptive,
   subtract,
   vectorFromMeasurement,
 } from '../utils/vector';
@@ -41,6 +47,7 @@ export default function useDeviceTracking({
 
   const gravityRef = useRef(null);
   const magneticRef = useRef(null);
+  const fusedFrameRef = useRef(null);
   const frameRef = useRef(null);
   const orientationRef = useRef(initialOrientation);
   const sensorOrientationRef = useRef(null);
@@ -171,11 +178,32 @@ export default function useDeviceTracking({
           const gravity = userAcceleration
             ? subtract(accelerationWithGravity, userAcceleration)
             : accelerationWithGravity;
-          gravityRef.current = smoothVector(
+          gravityRef.current = smoothVectorAdaptive(
             gravityRef.current,
             gravity,
             GRAVITY_SMOOTHING
           );
+        }
+
+        if (Platform.OS === 'android') {
+          const correction = headingRef.current.correction;
+          const fusedFrame =
+            buildOrientationFrameFromRotation(
+              measurement.rotation,
+              correction
+            ) ||
+            buildOrientationFrame(
+              gravityRef.current,
+              magneticRef.current,
+              correction
+            );
+          if (fusedFrame) {
+            fusedFrameRef.current = smoothOrientationFrame(
+              fusedFrameRef.current,
+              fusedFrame,
+              ORIENTATION_FRAME_SMOOTHING
+            );
+          }
         }
 
         sensorOrientationRef.current = measurement.orientation;
@@ -225,7 +253,7 @@ export default function useDeviceTracking({
 
         const offset = magnetometerOffsetRef.current;
         const corrected = subtract(raw, offset);
-        magneticRef.current = smoothVector(
+        magneticRef.current = smoothVectorAdaptive(
           magneticRef.current,
           corrected,
           MAGNETIC_SMOOTHING
@@ -291,6 +319,7 @@ export default function useDeviceTracking({
     setCalibrationHint(true);
     setCalibrationMessage('Calibrando durante 8 segundos…');
     magneticRef.current = null;
+    fusedFrameRef.current = null;
     frameRef.current = null;
     setOrientationReady(false);
 
@@ -311,6 +340,7 @@ export default function useDeviceTracking({
 
       magnetometerOffsetRef.current = calculateOffset(samples);
       magneticRef.current = null;
+      fusedFrameRef.current = null;
       frameRef.current = null;
       setCalibrationMessage(
         `Calibración completada con ${samples.length} muestras.`
@@ -335,6 +365,7 @@ export default function useDeviceTracking({
     recalibrate,
     gravityRef,
     magneticRef,
+    fusedFrameRef,
     headingRef,
     frameRef,
     orientationRef,
@@ -356,10 +387,14 @@ function publishHeading(data, headingRef) {
   headingRef.current = {
     correction:
       hasTrueNorth && hasMagneticNorth
-        ? data.trueHeading - data.magHeading
+        ? normalizeAngle(data.trueHeading - data.magHeading)
         : 0,
     mode,
   };
+}
+
+function normalizeAngle(angle) {
+  return ((angle + 540) % 360) - 180;
 }
 
 function publishHeadingError(headingRef) {

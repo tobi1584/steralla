@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  Animated,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -10,8 +10,6 @@ import {
 import styles from '../styles';
 import CelestialBodyIcon from './CelestialBodyIcon';
 import ControlRow from './ControlRow';
-
-const CLOSED_DRAWER_OFFSET = -360;
 
 export default function CelestialMenu({
   bodies,
@@ -23,63 +21,78 @@ export default function CelestialMenu({
   onChangeProfile,
   onRecalibrate,
   calibrationActive,
+  onOpenChange,
 }) {
   const [open, setOpen] = useState(false);
   const [planetsOpen, setPlanetsOpen] = useState(false);
   const [constellationsOpen, setConstellationsOpen] = useState(false);
   const [deepSkyOpen, setDeepSkyOpen] = useState(false);
   const [calibrationOpen, setCalibrationOpen] = useState(false);
-  const drawerProgress = useRef(new Animated.Value(0)).current;
-  const featuredTargets = skyTargets.filter(
-    (target) => target.group === 'featured'
-  );
-  const zodiacTargets = skyTargets.filter(
-    (target) => target.group === 'zodiac'
-  );
-  const deepSkyTargets = skyTargets.filter(
-    (target) => target.kind === 'deepSky'
+  const { featuredTargets, zodiacTargets, deepSkyTargets } = useMemo(
+    () => ({
+      featuredTargets: skyTargets.filter(
+        (target) => target.group === 'featured'
+      ),
+      zodiacTargets: skyTargets.filter(
+        (target) => target.group === 'zodiac'
+      ),
+      deepSkyTargets: skyTargets.filter(
+        (target) => target.kind === 'deepSky'
+      ),
+    }),
+    [skyTargets]
   );
 
-  useEffect(() => {
-    Animated.timing(drawerProgress, {
-      toValue: open ? 1 : 0,
-      duration: open ? 260 : 210,
-      useNativeDriver: true,
-    }).start();
-  }, [drawerProgress, open]);
+  const setDrawerOpen = useCallback(
+    (nextOpen) => {
+      setOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+    },
+    [onOpenChange]
+  );
 
   const selectBody = (bodyId) => {
     onSelectBody(bodyId);
-    setOpen(false);
+    setDrawerOpen(false);
   };
-
-  const drawerTranslateX = drawerProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [CLOSED_DRAWER_OFFSET, 0],
-  });
 
   return (
     <View pointerEvents="box-none" style={styles.menuArea}>
-      <Animated.View
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[styles.menuBackdrop, { opacity: drawerProgress }]}
+      {!open && (
+        <Pressable
+          accessibilityLabel="Abrir menú"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: false }}
+          hitSlop={8}
+          onPress={() => setDrawerOpen(true)}
+          style={styles.menuButton}
+        >
+          <Text style={styles.menuButtonIcon}>☰</Text>
+        </Pressable>
+      )}
+
+      <Modal
+        animationType="fade"
+        hardwareAccelerated
+        navigationBarTranslucent
+        onRequestClose={() => setDrawerOpen(false)}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        transparent
+        visible={open}
       >
+        <View style={styles.menuModal}>
         <Pressable
           accessibilityLabel="Cerrar menú"
-          onPress={() => setOpen(false)}
-          style={styles.menuBackdropPressable}
+          onPress={() => setDrawerOpen(false)}
+          style={styles.menuBackdrop}
         />
-      </Animated.View>
 
-      <Animated.View
-        accessibilityElementsHidden={!open}
+      <View
         accessibilityViewIsModal
-        importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[
-          styles.menuPanel,
-          { transform: [{ translateX: drawerTranslateX }] },
-        ]}
+        importantForAccessibility="yes"
+        renderToHardwareTextureAndroid
+        style={styles.menuPanel}
       >
         <View style={styles.drawerHeader}>
           <Text style={styles.menuEyebrow}>EXPLORAR</Text>
@@ -92,6 +105,7 @@ export default function CelestialMenu({
         <ScrollView
           style={styles.menuScroll}
           contentContainerStyle={styles.menuScrollContent}
+          nestedScrollEnabled
           showsVerticalScrollIndicator={false}
         >
           <Pressable
@@ -207,17 +221,20 @@ export default function CelestialMenu({
             <Text style={styles.stopGuideText}>Detener búsqueda</Text>
           </Pressable>
         )}
-      </Animated.View>
+      </View>
 
       <Pressable
-        accessibilityLabel={open ? 'Cerrar menú' : 'Abrir menú'}
+        accessibilityLabel="Cerrar menú"
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        onPress={() => setOpen((current) => !current)}
-        style={[styles.menuButton, open && styles.menuButtonOpen]}
+        accessibilityState={{ expanded: true }}
+        hitSlop={8}
+        onPress={() => setDrawerOpen(false)}
+        style={[styles.menuButton, styles.menuButtonOpen]}
       >
-        <Text style={styles.menuButtonIcon}>{open ? '×' : '☰'}</Text>
+        <Text style={styles.menuButtonIcon}>×</Text>
       </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
